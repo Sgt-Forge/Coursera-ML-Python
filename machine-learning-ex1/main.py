@@ -16,12 +16,22 @@ def plot_data(x, y):
     pyplot.xlabel('Population of City in 10,000s')
     pyplot.show()
 
+def computeCost(X, y, theta):
+    m = y.size
+    J = (1/(2*m)) * sum( (np.matmul(X, theta) - y)**2 )
+    return J
+
 def main():
     data = np.loadtxt(os.path.join('Data', 'ex1data1.txt'), delimiter=',')
     X, y = data[:, 0], data[:, 1]
     m = y.size
 
     plot_data(X, y)
+
+    X = np.stack([np.ones(m), X], axis=1)
+    theta = np.array([0.0, 0.0])
+    cost = computeCost(X, y, theta)
+    print(cost)
 
 
 if __name__ == '__main__':
