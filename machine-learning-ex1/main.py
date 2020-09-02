@@ -21,6 +21,18 @@ def computeCost(X, y, theta):
     J = (1/(2*m)) * sum( (np.matmul(X, theta) - y)**2 )
     return J
 
+def gradientDescent(X, y, theta, alpha, num_iters):
+    m = y.size
+    adjusted_theta = theta
+
+    for i in range(0, num_iters):
+        hypothesis = np.matmul(X, adjusted_theta)
+        error = hypothesis - y
+        gradient = np.matmul(error, X)
+        adjusted_theta -= (alpha / m) * gradient
+
+    return adjusted_theta
+
 def main():
     data = np.loadtxt(os.path.join('Data', 'ex1data1.txt'), delimiter=',')
     X, y = data[:, 0], data[:, 1]
@@ -29,9 +41,12 @@ def main():
     plot_data(X, y)
 
     X = np.stack([np.ones(m), X], axis=1)
+    iterations = 1500
+    alpha = 0.01
     theta = np.array([0.0, 0.0])
-    cost = computeCost(X, y, theta)
-    print(cost)
+    print(computeCost(X, y, theta))
+    print(computeCost(X, y, np.array([-1, 2])))
+    print(gradientDescent(X, y, np.array([0.0, 0.0]), alpha, iterations))
 
 
 if __name__ == '__main__':
