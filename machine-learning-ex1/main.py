@@ -15,6 +15,13 @@ def plot_data(x, y):
     pyplot.ylabel('Profit in $10,000s')
     pyplot.xlabel('Population of City in 10,000s')
 
+def plot_cost_hist(J_hist, rate):
+    pyplot.plot(np.arange(len(J_hist)), J_hist, '-', ms=10, mec='k')
+    pyplot.ylabel('Cost J')
+    pyplot.xlabel('Iterations')
+
+    pyplot.plot(np.arange(len(J_hist)), J_hist, '-')
+
 def compute_cost(X, y, theta):
     m = y.shape[0]
     J = (1/(2*m)) * np.sum( np.square((np.dot(X, theta) - y)) )
@@ -23,11 +30,11 @@ def compute_cost(X, y, theta):
 def gradient_descent(X, y, theta, alpha, num_iters):
     m = y.shape[0]
     adjusted_theta = theta.copy()
-
+    J_hist = []
     for i in range(0, num_iters):
         adjusted_theta -= (alpha / m) * (np.dot(X, adjusted_theta) - y).dot(X)
-
-    return adjusted_theta
+        J_hist.append(compute_cost(X, y, adjusted_theta))
+    return J_hist, adjusted_theta
 
 def predict(X, theta):
     pred = np.dot(X, theta)
@@ -84,6 +91,17 @@ def normalizeFeatures(X):
 
     return X_norm, mu, sigma
 
+def normal_equation(X, y):
+    first = np.dot(X.T,X)
+    inverse = None
+    try:
+        inverse = np.linalg.inv(first)
+        X_terms = np.dot(inverse,X.T)
+        return np.dot(X_terms, y)
+    except np.linalg.LinAlgError:
+        print('ERROR: Matrix is non-invertible')
+        return -1
+
 def part1():
     print('='*50)
     print('\tBegin Part 1')
@@ -96,12 +114,35 @@ def part1():
     pyplot.show()
 
     X = np.stack([np.ones(m), X], axis=1)
+    theta = np.array([0.0, 0.0])
+    print("Compute cost for theta: ", theta)
+    print(compute_cost(X, y, theta))
+    print("Compute cost for theta: ", [-1,2])
+    print(compute_cost(X, y, np.array([-1, 2])))
+
+def part2():
+    print('='*50)
+    print('\tBegin Part 2')
+    print('='*50)
+    data = np.loadtxt(os.path.join('Data', 'ex1data1.txt'), delimiter=',')
+    X, y = data[:, 0], data[:, 1]
+    m = y.size
     iterations = 1500
     alpha = 0.01
+    learning_rates = [0.01, 0.02, 0.0001, 0.0002]
+    X = np.stack([np.ones(m), X], axis=1)
+
+    str_rates = []
+    figure = pyplot.figure()
+    for rate in learning_rates:
+        J_hist, theta = gradient_descent(X, y, [0, 0], rate, iterations)
+        plot_cost_hist(J_hist, rate)
+        str_rates.append("{:.4f}".format(rate))
+    pyplot.legend(str_rates)
+    pyplot.show()
+
     theta = np.array([0.0, 0.0])
-    print(compute_cost(X, y, theta))
-    print(compute_cost(X, y, np.array([-1, 2])))
-    theta = gradient_descent(X, y, theta, alpha, iterations)
+    J_hist, theta = gradient_descent(X, y, theta, alpha, iterations)
 
     plot_data(X[:, 1], y)
     pyplot.plot(X[:, 1], np.dot(X, theta), '-')
@@ -138,16 +179,20 @@ def part3():
     print(cost)
     iterations = 400
     alpha = 0.1
-    theta = gradient_descent(X, y, theta, alpha, iterations)
+    J_hist, theta = gradient_descent(X, y, theta, alpha, iterations)
     print(theta)
     cost = compute_cost(X, y, theta)
     test_case = [1, 1650, 3]
     test_case[1:3] = (test_case[1:3] - mu) / sigma
     cost = np.dot(test_case,theta)
     print(cost)
+    norm_eq_theta = normal_equation(X, y)
+    cost = np.dot(test_case, norm_eq_theta)
+    print(cost)
 
 def main():
-    # part1()
+    part1()
+    part2()
     part3()
 
 
