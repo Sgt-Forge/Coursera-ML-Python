@@ -32,14 +32,13 @@ def regularized_cost_function(theta, X, y, lambda_):
     succeed. Hence, we don't need the tranpose of y, but we take it
     because it's right
     '''
-    regularization_value = (lambda_ / (2 * num_examples)) * np.sum(theta ** 2)
+    reg_value = (lambda_ / (2 * num_examples)) * np.sum(theta[1:] ** 2)
     J = (1/num_examples) * np.sum(
                         np.dot(-y, np.log(hypothesis)) -
                         np.dot(1-y, np.log(1 - hypothesis))
-                    ) + regularization_value
-    regularization_value = (lambda_ / num_examples) * theta
+                    ) + reg_value
+    reg_value = (lambda_ / num_examples) * theta
     grad = (1/num_examples) * np.dot((hypothesis - y), X)
-    grad += regularization_value
-    print(regularization_value)
+    grad[1:] += reg_value[1:]
 
     return J, grad

@@ -51,7 +51,8 @@ def visualize(X: List[List[float]], y: List[int]) -> None:
     pyplot.legend(['Admitted', 'Rejected'])
 
 
-def optimize_theta(cost_function, initial_theta, X, y):
+def optimize_theta(cost_function, initial_theta, X, y,
+                   options={'maxiter': 400}):
     """Optimize theta parameters using a cost function and initial theta
 
     Args:
@@ -68,7 +69,7 @@ def optimize_theta(cost_function, initial_theta, X, y):
                             (X, y),
                             jac=True,
                             method='TNC',
-                            options={'maxiter': 400})
+                            options=options)
 
     return res
 
@@ -117,7 +118,7 @@ def predict(theta, X):
     return predictions
 
 
-def map_features(X):
+def map_features(X1, X2):
     """Maps two features to a 6 degree polynomial feature set
 
     Args:
@@ -126,16 +127,37 @@ def map_features(X):
     Returns:
         Mapped feature set with added bias feature
     """
-    num_training_exs = X.shape[0]
-    mapped_features = [np.ones(num_training_exs)]
-    feature1 = X[:, 0]
-    feature2 = X[:, 1]
+    degree = 6
+    if X1.ndim > 0:
+        mapped_features = [np.ones(X1.shape[0])]
+    else:
+        mapped_features = [(np.ones(1))]
 
-    for i in range(1, num_training_exs):
+    for i in range(1, degree + 1):
         for j in range(i + 1):
-            mapped_features.append((feature1 ** (i - j)) * (feature2 ** j))
+            mapped_features.append((X1 ** (i - j)) * (X2 ** j))
 
-    return np.stack(mapped_features, axis=1)
+    if X1.ndim > 0:
+        return np.stack(mapped_features, axis=1)
+    else:
+        return np.array(mapped_features, dtype=object)
+
+
+def plot_non_linear_boundary(theta, X, y):
+    visualize(X, y)
+    u = np.linspace(-1, 1.5, 50)
+    v = np.linspace(-1, 1.5, 50)
+
+    z = np.zeros((u.size, v.size))
+    for i, ui in enumerate(u):
+        for j, vj in enumerate(v):
+            z[i, j] = np.dot(map_features(ui, vj), theta)
+
+    z = z.T
+
+    pyplot.contour(u, v, z, levels=[0], linewidths=2, colors='g')
+    pyplot.contourf(u, v, z, levels=[np.min(z), 0, np.max(z)], cmap='Greens',
+                    alpha=0.4)
 
 
 def part_one():
@@ -192,13 +214,25 @@ def part_two():
     X, y = data[:, 0:2], data[:, 2]
     visualize(X, y)
     pyplot.show()
-    X_mapped = map_features(X)
+    X_mapped = map_features(X[:, 0], X[:, 1])
     m = y.size
     theta = np.zeros(X_mapped.shape[1])
     cost, gradient = regularized_cost_function(theta, X_mapped, y, 1)
     print("Cost:\n\t{:.3f}".format(cost))
     print('Gradient:\n\t{:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}'.
           format(*gradient))
+    theta = np.ones(X_mapped.shape[1])
+    cost, gradient = regularized_cost_function(theta, X_mapped, y, 10)
+    print('Set initial thetas to 1, and lambda to 10')
+    print("Cost:\n\t{:.3f}".format(cost))
+    print('Gradient:\n\t{:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}'.
+          format(*gradient))
+    optimized = optimize_theta(cost_function, theta, X_mapped, y,
+                               options={'maxiter': 100})
+    optimized_cost = optimized.fun
+    optimized_theta = optimized.x
+    plot_non_linear_boundary(optimized_theta, X, y)
+    pyplot.show()
 
 
 def main():
