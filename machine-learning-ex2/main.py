@@ -11,6 +11,7 @@ from scipy import optimize
 
 from sigmoid import sigmoid
 from logistic_cost import cost_function
+from regularized_cost_function import regularized_cost_function
 
 
 def print_section_header(section: str) -> None:
@@ -43,7 +44,7 @@ def visualize(X: List[List[float]], y: List[int]) -> None:
     pos = y == 1
     neg = y == 0
     _fig = pyplot.figure()
-    pyplot.plot(X[pos, 0], X[pos, 1], 'k*', lw=2, ms=10)
+    pyplot.plot(X[pos, 0], X[pos, 1], 'k+', lw=2, ms=10)
     pyplot.plot(X[neg, 0], X[neg, 1], 'ko', mfc='y', ms=8, mec='k', mew=1)
     pyplot.xlabel('Exam Score 1')
     pyplot.ylabel('Exam Score 2')
@@ -72,8 +73,73 @@ def optimize_theta(cost_function, initial_theta, X, y):
     return res
 
 
+def plot_decision_boundary(theta, X, y):
+    """Plot data and draw decision boundary with given theta parameters.
+
+    Generates scatter plot with decision boundary.
+
+    Args:
+        visualize: Plotting function to create a scatter plot
+        theta: Theta parameters for the decision boundary
+        X: A matrix of scores for exams 1 and 2 for each student
+        y: Binary vector to track admittance for each student
+
+    Returns:
+        None
+    """
+    visualize(X[:, 1:3], y)
+    '''
+    If you want to figure out _how_ to plot the decision boundary, you have to
+    understand the following links:
+    https://statinfer.com/203-5-2-decision-boundary-logistic-regression/
+    https://en.wikipedia.org/wiki/Logistic_regression
+    Basically we have to plot the line when our probability is 0.5. You can
+    recover the theta paremeters from the equation by calculating the odds of
+    classifying 0.5 (yes, the literal definition of odds: {p / 1-p} )
+    '''
+    X_points = np.array([np.min(X[:, 1]), np.max(X[:, 1])])
+    y_points = (-1 / theta[2]) * (theta[1] * X_points + theta[0])
+    pyplot.plot(X_points, y_points)
+
+
+def predict(theta, X):
+    """Make predictions for test set with trained theta parameters
+
+    Args:
+        theta: Trained theta parameters
+        X: Test set
+
+    Returns:
+        array-like of predictions
+    """
+    predictions = sigmoid(X.dot(theta)) >= 0.5
+
+    return predictions
+
+
+def map_features(X):
+    """Maps two features to a 6 degree polynomial feature set
+
+    Args:
+        X: initial feature set without bias feature
+
+    Returns:
+        Mapped feature set with added bias feature
+    """
+    num_training_exs = X.shape[0]
+    mapped_features = [np.ones(num_training_exs)]
+    feature1 = X[:, 0]
+    feature2 = X[:, 1]
+
+    for i in range(1, num_training_exs):
+        for j in range(i + 1):
+            mapped_features.append((feature1 ** (i - j)) * (feature2 ** j))
+
+    return np.stack(mapped_features, axis=1)
+
+
 def part_one():
-    """Drive function for part one of the exercise
+    """Driver function for part one of the exercise
 
     Visualize the data, compute cost and gradient and learn optimal theta
     paramaters
@@ -99,6 +165,40 @@ def part_one():
     print('Optimized cost:\n\t{:.3f}'.format(optimized_cost))
     print('Optimized theta:\n\t{:.3f}, {:.3f}, {:.3f}'.
           format(*optimized_theta))
+    plot_decision_boundary(optimized_theta, X, y)
+    pyplot.show()
+    test_scores = np.array([1, 45, 85])
+    probability = sigmoid(test_scores.dot(optimized_theta))
+    print('Probability for student with scores 45 and 85:\n\t{:.3f}'.
+          format(probability))
+    print('Expected value: 0.775 +/- 0.002')
+    predictions = predict(optimized_theta, X)
+    print('Training accuracy:\n\t{:.3f}'.
+          format(np.mean(predictions == y) * 100))
+    print('Expected accuracy: 89.00%')
+
+
+def part_two():
+    """Driver function for part two of the exercise
+
+    Visualize the data, compute regularized cost and gradient, and learn
+    optimal theta parameters
+
+    Returns:
+        None
+    """
+    print_section_header('Section 2')
+    data = np.loadtxt(os.path.join('data/ex2data2.txt'), delimiter=',')
+    X, y = data[:, 0:2], data[:, 2]
+    visualize(X, y)
+    pyplot.show()
+    X_mapped = map_features(X)
+    m = y.size
+    theta = np.zeros(X_mapped.shape[1])
+    cost, gradient = regularized_cost_function(theta, X_mapped, y, 1)
+    print("Cost:\n\t{:.3f}".format(cost))
+    print('Gradient:\n\t{:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}'.
+          format(*gradient))
 
 
 def main():
@@ -110,6 +210,7 @@ def main():
         None
     """
     part_one()
+    part_two()
 
 
 if __name__ == '__main__':
